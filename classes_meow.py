@@ -53,9 +53,13 @@ class Player(pygame.sprite.Sprite):
         self.is_jump = False #прыжок
         self.jump_count = 9
         # self.player_anim_count = 0
+        self.frame = 0
+        self.last_update = pygame.time.get_ticks()
+        self.frame_rate = 35
 
 
     def update(self):
+        now = pygame.time.get_ticks()
         self.speedx = 0
         self.speedy = 0
         global player_anim_count
@@ -68,30 +72,35 @@ class Player(pygame.sprite.Sprite):
         #     player_anim_count = 0
         # else:
         #     player_anim_count += 1
+        if now - self.last_update > self.frame_rate:
+            self.last_update = now
+            self.frame += 1
+            if keystate[pygame.K_UP]:
+                #self.image = pygame.transform.scale(player_stand[self.player_anim_count], (45, 50))
+                self.image = player_stand[player_anim_count]
+                if player_anim_count == 3:
+                    player_anim_count = 0
+                    self.frame = 0
+                else:
+                    player_anim_count += 1
 
-        if keystate[pygame.K_UP]:
-            #self.image = pygame.transform.scale(player_stand[self.player_anim_count], (45, 50))
-            self.image = player_stand[player_anim_count]
-            if player_anim_count == 3:
-                player_anim_count = 0
-            else:
-                player_anim_count += 1
 
-
-        if keystate[pygame.K_LEFT]:
-            self.speedx = -8
-            self.image = player_walk_l[player_walk_l_count]
-            if player_walk_l_count == 2:
-                player_walk_l_count = 0
-            else:
-                player_walk_l_count += 1
-        if keystate[pygame.K_RIGHT]:
-            self.speedx = 8
-            self.image = player_walk_r[player_walk_r_count]
-            if player_walk_r_count == 2:
-                player_walk_r_count = 0
-            else:
-                player_walk_r_count += 1
+            if keystate[pygame.K_LEFT]:
+                self.speedx = -10
+                self.image = player_walk_l[player_walk_l_count]
+                if player_walk_l_count == 2:
+                    player_walk_l_count = 0
+                    self.frame = 0
+                else:
+                    player_walk_l_count += 1
+            if keystate[pygame.K_RIGHT]:
+                self.speedx = 10
+                self.image = player_walk_r[player_walk_r_count]
+                if player_walk_r_count == 2:
+                    player_walk_r_count = 0
+                    self.frame = 0
+                else:
+                    player_walk_r_count += 1
         # if keystate[pygame.K_UP]:
         #     self.speedy = -8
         # if keystate[pygame.K_DOWN]:
