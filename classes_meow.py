@@ -3,11 +3,15 @@ from os import path
 
 
 img_dir = path.join(path.dirname(__file__), 'img_cat')
-WIDTH = 600
-HEIGHT = 480
+WIDTH = 800
+HEIGHT = 640
 GREEN = (0, 255, 0)
 BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
+
+#прыжок 2.0
+JUMP_POWER = 10 #WHITE_POWER?
+GRAVITY = 0.35 #Сила притяжения
 
 player_stand = [
     pygame.image.load(path.join(img_dir, 'cat_stand\cat_stand_0.png')),
@@ -38,33 +42,44 @@ player_walk_r_count = 0
 #     img.set_colorkey(BLACK)
 #     cat_stand_anim['lg'].append(img)
 
-
+up = False
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         #self.image = pygame.transform.scale(player_stand[3], (45, 50))
-        #self.image = player_stand[3]
-        self.image = pygame.Surface((10, 10))
-        self.image.fill(GREEN)
+        self.image = player_stand[3]
+        # self.image = pygame.Surface((10, 10))
+        # self.image.fill(GREEN)
         self.rect = self.image.get_rect()
         self.rect.center = (WIDTH / 2, 430)
+        self.yvel = 0 #скорость вертикального перемещения
+        self.xvel = 0  # скорость горизонтального перемещения
+        self.onGround = False #Проверка на нахождение на земле ли
 
-        self.is_jump = False #прыжок
-        self.jump_count = 9
-        # self.player_anim_count = 0
+        # self.is_jump = False #прыжок
+        # self.jump_count = 9
+
+
         self.frame = 0
         self.last_update = pygame.time.get_ticks()
         self.frame_rate = 35
 
 
-    def update(self):
+    def update(self, platforms):
+        global up
+        #вариант прыжка
+        if up:
+            if self.onGround: # прыгаем, только когда можем оттолкнуться от земли
+                self.yvel = -JUMP_POWER
+
         now = pygame.time.get_ticks()
         self.speedx = 0
         self.speedy = 0
         global player_anim_count
         global player_walk_l_count
         global player_walk_r_count
+
 
         keystate = pygame.key.get_pressed()
         # self.image = player_stand[player_anim_count]
@@ -101,24 +116,44 @@ class Player(pygame.sprite.Sprite):
                     self.frame = 0
                 else:
                     player_walk_r_count += 1
+        if self.rect.center == (WIDTH / 2, 430):
+            self.onGround = True
+            up = True
+
+        if not self.onGround:
+            self.yvel += GRAVITY
+
+        self.onGround = False  # Мы не знаем, когда мы на земле((
+        self.rect.y += self.yvel
+        self.collide(0, self.yvel, platforms)
+
+        self.rect.x += self.xvel  # переносим свои положение на xvel
+        self.collide(self.xvel, 0, platforms)
+
+
+        if keystate[pygame.KEYDOWN] and keystate[pygame.K_SPACE]:
+            up = True
+
+        if keystate[pygame.KEYUP] and keystate[pygame.K_SPACE]:
+            up = False
         # if keystate[pygame.K_UP]:
         #     self.speedy = -8
         # if keystate[pygame.K_DOWN]:
         #     self.speedy = 8
-#прыжок
-        if not self.is_jump:
-            if keystate[pygame.K_SPACE]:
-                self.is_jump = True
-        else:
-            if self.jump_count >= -9:
-                if self.jump_count > 0:
-                    self.rect.y -= (self.jump_count ** 2) // 2
-                else:
-                    self.rect.y += (self.jump_count ** 2) // 2
-                self.jump_count -= 1
-            else:
-                self.is_jump = False
-                self.jump_count = 9
+# #прыжок
+#         if not self.is_jump:
+#             if keystate[pygame.K_SPACE]:
+#                 self.is_jump = True
+#         else:
+#             if self.jump_count >= -9:
+#                 if self.jump_count > 0:
+#                     self.rect.y -= (self.jump_count ** 2) // 2
+#                 else:
+#                     self.rect.y += (self.jump_count ** 2) // 2
+#                 self.jump_count -= 1
+#             else:
+#                 self.is_jump = False
+#                 self.jump_count = 9
 
         self.rect.x += self.speedx
         self.rect.y += self.speedy
@@ -130,6 +165,25 @@ class Player(pygame.sprite.Sprite):
             self.rect.top = 0
         if self.rect.bottom > HEIGHT:
             self.rect.bottom = HEIGHT
+
+    def collide(self, xvel, yvel, platforms):
+        for p in platforms:
+            if pygame.sprite.collide_rect(self, p):  # если есть пересечение платформы с игроком
+
+                if xvel > 0:  # если движется вправо
+                    self.rect.right = p.rect.left  # то не движется вправо
+
+                if xvel < 0:  # если движется влево
+                    self.rect.left = p.rect.right  # то не движется влево
+
+                if yvel > 0:  # если падает вниз
+                    self.rect.bottom = p.rect.top  # то не падает вниз
+                    self.onGround = True  # и становится на что-то твердое
+                    self.yvel = 0  # и энергия падения пропадает
+
+                if yvel < 0:  # если движется вверх
+                    self.rect.top = p.rect.bottom  # то не движется вверх
+                    self.yvel = 0  # и энергия прыжка пропадает
 
 
 # class Block(pygame.sprite.Sprite):
